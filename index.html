@@ -75,6 +75,7 @@ body[data-level=none]{--ring:var(--track);--dot:rgba(255,255,255,.55)}
 .ring .v{stroke:var(--ring);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .4s ease,stroke .2s}
 .ring-text{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
 .pct{font-size:30px;font-weight:800;line-height:1}
+.pct.long{font-size:23px}
 .ring-text small{color:var(--muted);font-size:12px;margin-top:4px}
 .rows{display:grid;gap:0}
 .row{padding:10px 0;border-bottom:1px solid var(--line)}
@@ -93,7 +94,7 @@ input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var
 button{font-family:inherit;width:100%;border:1.5px solid var(--line);background:transparent;color:var(--brand);padding:14px;border-radius:14px;
   font-weight:700;font-size:16px;cursor:pointer;margin-top:6px}
 button:active{transform:scale(.99)}
-button:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .note{text-align:center;color:var(--muted);font-size:13px;margin:6px 8px 0;line-height:1.45}
 @media(max-width:360px){.summary{grid-template-columns:1fr}.ring{margin:auto}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -159,6 +160,19 @@ const store={
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
 const money=n=>'S/ '+n.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+// Porcentaje: entero normalmente; con un decimal cerca de los extremos para que
+// 100% / 0% solo aparezcan cuando el saldo es realmente total o cero.
+function fmtPct(p){
+  if(p<=0)return '0';
+  if(p>=100)return '100';
+  if(p<1||p>99){
+    const t=p.toFixed(1);
+    if(t==='100.0')return '99.9';
+    if(t==='0.0')return '0.1';
+    return t;
+  }
+  return String(Math.round(p));
+}
 
 function calculate(){
   const total=Number(totalInput.value), available=Number(availableInput.value);
@@ -187,7 +201,7 @@ function calculate(){
   store.set('linea.total',totalInput.value);store.set('linea.available',availableInput.value);
 
   const used=total-available, usedPct=used/total*100, availPct=100-usedPct;
-  const rUsed=Math.round(usedPct), rAvail=Math.round(availPct);
+  const rUsed=fmtPct(usedPct), rAvail=fmtPct(availPct);
   const level=usedPct<=30?'low':usedPct<=70?'mid':'high';
   document.body.dataset.level=level;
   $('status').textContent={low:'Uso bajo',mid:'Uso medio',high:'Uso alto'}[level];
@@ -198,6 +212,7 @@ function calculate(){
   $('used').textContent=money(used);
   $('availPct').textContent=rAvail+'%';
   $('percent').textContent=rUsed+'%';
+  $('percent').classList.toggle('long',rUsed.length>3);
   $('ringLabel').setAttribute('aria-label',rUsed+'% consumido');
   $('ringFill').style.strokeDashoffset=100-usedPct;
   $('meterFill').style.width=usedPct+'%';
