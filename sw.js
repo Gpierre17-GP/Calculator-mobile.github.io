@@ -1,4 +1,4 @@
-const CACHE = 'calculator-gp-v3';
+const CACHE = 'calculator-gp-v5';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png',
@@ -6,7 +6,11 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(ASSETS.map(a => c.add(new Request(a, { cache: 'reload' })))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -17,17 +21,16 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Responde desde caché y actualiza en segundo plano (funciona sin internet).
+// Con internet: siempre la versión más nueva. Sin internet: la guardada.
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(cached => {
-      const net = fetch(req).then(res => {
-        if (res && res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
-        return res;
-      }).catch(() => cached || (req.mode === 'navigate' ? caches.match('./index.html') : undefined));
-      return cached || net;
-    })
+    fetch(req, { cache: 'no-cache' }).then(res => {
+      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() =>
+      caches.match(req, { ignoreSearch: true }).then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined))
+    )
   );
 });

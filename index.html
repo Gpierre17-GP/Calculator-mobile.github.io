@@ -147,7 +147,7 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
     <button id="reset" type="button">Restablecer valores</button>
   </section>
 
-  <p class="note">Montos en soles (S/). Los cálculos se hacen en tu dispositivo y no se envían a ningún servidor.</p>
+  <p class="note">Montos en soles (S/). Los cálculos se hacen en tu dispositivo y no se envían a ningún servidor.<br>Calculator GP · versión 5</p>
 </main>
 
 <script>
@@ -160,20 +160,17 @@ const store={
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
 const money=n=>'S/ '+n.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
-// Porcentaje: entero normalmente; con un decimal cerca de los extremos para que
-// 100% / 0% solo aparezcan cuando el saldo es realmente total o cero.
-function fmtPct(p){
-  if(p<=0)return '0';
-  if(p>=100)return '100';
-  if(p<1||p>99){
-    const t=p.toFixed(1);
-    if(t==='100.0')return '99.9';
-    if(t==='0.0')return '0.1';
-    return t;
-  }
-  return String(Math.round(p));
+// Porcentaje con un decimal siempre (44.0, 98.8, 1.2). Disponible = 100 - consumido,
+// así ambos suman exactamente 100. "100" y "0" solo cuando el saldo es total o cero;
+// "<0.1" cuando queda algo, pero menos de una décima.
+function pctPair(usedPct){
+  if(usedPct<=0)return ['0','100'];
+  if(usedPct>=100)return ['100','0'];
+  const u=Math.round(usedPct*10)/10;
+  if(u<=0)return ['<0.1','99.9'];
+  if(u>=100)return ['99.9','<0.1'];
+  return [u.toFixed(1),(Math.round((100-u)*10)/10).toFixed(1)];
 }
-
 function calculate(){
   const total=Number(totalInput.value), available=Number(availableInput.value);
   if(totalInput.value.trim()===''||availableInput.value.trim()===''){
@@ -201,7 +198,7 @@ function calculate(){
   store.set('linea.total',totalInput.value);store.set('linea.available',availableInput.value);
 
   const used=total-available, usedPct=used/total*100, availPct=100-usedPct;
-  const rUsed=fmtPct(usedPct), rAvail=fmtPct(availPct);
+  const [rUsed,rAvail]=pctPair(usedPct);
   const level=usedPct<=30?'low':usedPct<=70?'mid':'high';
   document.body.dataset.level=level;
   $('status').textContent={low:'Uso bajo',mid:'Uso medio',high:'Uso alto'}[level];
