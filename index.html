@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A2E6E">
+<meta name="description" content="Calculator GP: calcula cuánto de tu línea de crédito has consumido.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calculator GP">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon-64.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Calculator GP</title>
+<style>
+:root{
+  --bg:#EEF2F8;--surface:#fff;--line:#DCE4EF;--ink:#0F2540;--muted:#5A6B83;
+  --brand:#1556D6;--deep:#0A2E6E;--track:#E3EAF4;--field:#F6F8FC;
+  --low:#0E9F74;--mid:#B86E00;--high:#CF3B3B;--ring:var(--low);
+  --dot:#5BE3B8;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#09111E;--surface:#111D30;--line:#22344F;--ink:#EAF0FA;--muted:#93A4BD;
+    --brand:#5B95FF;--track:#22334C;--field:#0C1626;--low:#2FD3A2;--mid:#F0B04A;--high:#FF7B7B}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;min-height:100dvh;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+body[data-level=low]{--ring:var(--low);--dot:#5BE3B8}
+body[data-level=mid]{--ring:var(--mid);--dot:#FFC857}
+body[data-level=high]{--ring:var(--high);--dot:#FF8A8A}
+.wrap{max-width:480px;margin:0 auto;padding:0 16px}
+
+/* Cabecera */
+.hero{background:linear-gradient(160deg,#0A2E6E,#1556D6);color:#fff;
+  padding:calc(env(safe-area-inset-top) + 14px) 0 64px;border-radius:0 0 30px 30px;position:relative;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.brand-text{display:flex;flex-direction:column;line-height:1.15}.brand-text small{font-size:12px;font-weight:500;opacity:.8}
+.brand img{width:32px;height:32px;border-radius:9px}
+#install{border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;
+  border-radius:999px;padding:8px 14px;font-size:14px;font-weight:650;cursor:pointer;width:auto;margin:0}
+
+/* Tarjeta principal */
+.card{position:relative;border-radius:24px;padding:22px 20px 20px;color:#fff;overflow:hidden;
+  background:linear-gradient(145deg,rgba(255,255,255,.20),rgba(255,255,255,.07));
+  border:1px solid rgba(255,255,255,.28);box-shadow:0 14px 30px rgba(4,20,52,.35)}
+.card:before,.card:after{content:"";position:absolute;border-radius:50%;border:26px solid rgba(255,255,255,.07);pointer-events:none}
+.card:before{width:220px;height:220px;right:-70px;top:-80px}
+.card:after{width:150px;height:150px;right:30px;bottom:-90px}
+.card>*{position:relative}
+.card-head{display:flex;justify-content:space-between;align-items:center;font-size:15px;opacity:.92}
+.pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:650}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--dot);display:block}
+.balance{font-size:clamp(36px,11vw,46px);font-weight:800;letter-spacing:-.02em;margin:12px 0 2px;line-height:1.1}
+.sub{font-size:14px;opacity:.85}
+.meter{height:10px;border-radius:99px;background:rgba(255,255,255,.22);margin-top:20px;overflow:hidden}
+.meter-fill{height:100%;width:0;background:#fff;border-radius:99px;transition:width .35s ease}
+.meter-labels{display:flex;justify-content:space-between;font-size:13px;margin-top:9px;opacity:.92;font-weight:600}
+
+/* Paneles */
+.sheet{margin-top:-34px;position:relative}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(15,37,64,.05)}
+.panel h2{font-size:16px;margin:0 0 14px;font-weight:700}
+.summary{display:grid;grid-template-columns:132px 1fr;gap:16px;align-items:center}
+.ring{width:132px;height:132px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:11}
+.ring .t{stroke:var(--track)}
+.ring .v{stroke:var(--ring);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .4s ease,stroke .2s}
+.ring-text{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.pct{font-size:30px;font-weight:800;line-height:1}
+.ring-text small{color:var(--muted);font-size:12px;margin-top:4px}
+.rows{display:grid;gap:0}
+.row{padding:10px 0;border-bottom:1px solid var(--line)}
+.row:first-child{padding-top:0}.row:last-child{border:0;padding-bottom:0}
+.row span{display:block;color:var(--muted);font-size:13px}
+.row b{font-size:19px;font-weight:700}
+
+.field{margin-bottom:16px}.field:last-of-type{margin-bottom:6px}
+label{display:block;font-size:13px;font-weight:650;color:var(--muted);margin-bottom:7px}
+.inputwrap{display:flex;align-items:center;background:var(--field);border:1.5px solid var(--line);border-radius:14px;padding:0 14px;transition:border-color .15s,box-shadow .15s}
+.inputwrap:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent)}
+.inputwrap[data-bad=true]{border-color:var(--high)}
+.inputwrap span{color:var(--muted);font-weight:700;font-size:18px}
+input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:22px;font-weight:700;padding:14px 10px}
+.warning{color:var(--high);font-size:13px;min-height:18px;margin-top:8px}
+button{font-family:inherit;width:100%;border:1.5px solid var(--line);background:transparent;color:var(--brand);padding:14px;border-radius:14px;
+  font-weight:700;font-size:16px;cursor:pointer;margin-top:6px}
+button:active{transform:scale(.99)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.note{text-align:center;color:var(--muted);font-size:13px;margin:6px 8px 0;line-height:1.45}
+@media(max-width:360px){.summary{grid-template-columns:1fr}.ring{margin:auto}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-level="mid">
+<header class="hero">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><img src="icon-192.png" alt="" width="32" height="32"><div class="brand-text"><b>Calculator GP</b><small>Línea de crédito</small></div></div>
+      <button id="install" type="button" hidden>Instalar</button>
+    </div>
+    <section class="card" aria-live="polite" aria-label="Saldo disponible">
+      <div class="card-head"><span>Saldo disponible</span><span class="pill"><i></i><span id="status">Uso medio</span></span></div>
+      <div id="shownAvailable" class="balance">S/ 392.00</div>
+      <div class="sub">de <span id="totalShown">S/ 700.00</span> de línea total</div>
+      <div class="meter"><div id="meterFill" class="meter-fill"></div></div>
+      <div class="meter-labels"><span id="usedLabel">Consumido 44%</span><span id="availableLabel">Disponible 56%</span></div>
+    </section>
+  </div>
+</header>
+
+<main class="wrap sheet">
+  <section class="panel" aria-label="Resumen" aria-live="polite">
+    <h2>Resumen</h2>
+    <div class="summary">
+      <div class="ring" role="img" id="ringLabel" aria-label="44% consumido">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="t" cx="50" cy="50" r="42" pathLength="100"/><circle id="ringFill" class="v" cx="50" cy="50" r="42" pathLength="100"/></svg>
+        <div class="ring-text"><div id="percent" class="pct">44%</div><small>consumido</small></div>
+      </div>
+      <div class="rows">
+        <div class="row"><span>Línea total</span><b id="tileTotal">S/ 700.00</b></div>
+        <div class="row"><span>Crédito utilizado</span><b id="used">S/ 308.00</b></div>
+        <div class="row"><span>Disponible</span><b id="availPct">56%</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Datos del crédito">
+    <h2>Actualizar datos</h2>
+    <div class="field">
+      <label for="total">Línea de crédito total</label>
+      <div class="inputwrap" id="wrapTotal"><span>S/</span><input id="total" type="number" inputmode="decimal" min="0.01" step="0.01" value="700"></div>
+    </div>
+    <div class="field">
+      <label for="available">Saldo disponible</label>
+      <div class="inputwrap" id="wrapAvailable"><span>S/</span><input id="available" type="number" inputmode="decimal" min="0" step="0.01" value="392"></div>
+      <div id="warning" class="warning" role="status"></div>
+    </div>
+    <button id="reset" type="button">Restablecer valores</button>
+  </section>
+
+  <p class="note">Montos en soles (S/). Los cálculos se hacen en tu dispositivo y no se envían a ningún servidor.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const totalInput=$('total'), availableInput=$('available');
+const DEFAULTS={total:'700',available:'392'};
+const store={
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+  del(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+const money=n=>'S/ '+n.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function calculate(){
+  const total=Number(totalInput.value), available=Number(availableInput.value);
+  const bad=totalInput.value.trim()===''||availableInput.value.trim()===''||!Number.isFinite(total)||!Number.isFinite(available)||total<=0||available<0||available>total;
+  $('wrapTotal').dataset.bad=$('wrapAvailable').dataset.bad=String(bad);
+  if(bad){$('warning').textContent='Ingresa una línea mayor que cero y un saldo entre S/ 0 y el total.';return}
+  $('warning').textContent='';
+  store.set('linea.total',totalInput.value);store.set('linea.available',availableInput.value);
+
+  const used=total-available, usedPct=used/total*100, availPct=100-usedPct;
+  const rUsed=Math.round(usedPct), rAvail=Math.round(availPct);
+  const level=usedPct<=30?'low':usedPct<=70?'mid':'high';
+  document.body.dataset.level=level;
+  $('status').textContent={low:'Uso bajo',mid:'Uso medio',high:'Uso alto'}[level];
+
+  $('shownAvailable').textContent=money(available);
+  $('totalShown').textContent=money(total);
+  $('tileTotal').textContent=money(total);
+  $('used').textContent=money(used);
+  $('availPct').textContent=rAvail+'%';
+  $('percent').textContent=rUsed+'%';
+  $('ringLabel').setAttribute('aria-label',rUsed+'% consumido');
+  $('ringFill').style.strokeDashoffset=100-usedPct;
+  $('meterFill').style.width=usedPct+'%';
+  $('usedLabel').textContent='Consumido '+rUsed+'%';
+  $('availableLabel').textContent='Disponible '+rAvail+'%';
+}
+
+totalInput.value=store.get('linea.total')??DEFAULTS.total;
+availableInput.value=store.get('linea.available')??DEFAULTS.available;
+totalInput.addEventListener('input',calculate);
+availableInput.addEventListener('input',calculate);
+$('reset').addEventListener('click',()=>{
+  totalInput.value=DEFAULTS.total;availableInput.value=DEFAULTS.available;
+  store.del('linea.total');store.del('linea.available');calculate();
+});
+calculate();
+
+/* Instalación */
+let deferred=null;
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferred=e;
+  if(!standalone)$('install').hidden=false;
+});
+$('install').addEventListener('click',async()=>{
+  if(!deferred)return;
+  deferred.prompt();await deferred.userChoice;
+  deferred=null;$('install').hidden=true;
+});
+window.addEventListener('appinstalled',()=>{$('install').hidden=true});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
