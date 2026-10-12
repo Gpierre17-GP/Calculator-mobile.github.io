@@ -32,6 +32,7 @@ body{margin:0;min-height:100dvh;background:var(--bg);color:var(--ink);
 body[data-level=low]{--ring:var(--low);--dot:#5BE3B8}
 body[data-level=mid]{--ring:var(--mid);--dot:#FFC857}
 body[data-level=high]{--ring:var(--high);--dot:#FF8A8A}
+body[data-level=none]{--ring:var(--track);--dot:rgba(255,255,255,.55)}
 .wrap{max-width:480px;margin:0 auto;padding:0 16px}
 
 /* Cabecera */
@@ -135,11 +136,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-
     <h2>Actualizar datos</h2>
     <div class="field">
       <label for="total">Línea de crédito total</label>
-      <div class="inputwrap" id="wrapTotal"><span>S/</span><input id="total" type="number" inputmode="decimal" min="0.01" step="0.01" value="700"></div>
+      <div class="inputwrap" id="wrapTotal"><span>S/</span><input id="total" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00"></div>
     </div>
     <div class="field">
       <label for="available">Saldo disponible</label>
-      <div class="inputwrap" id="wrapAvailable"><span>S/</span><input id="available" type="number" inputmode="decimal" min="0" step="0.01" value="392"></div>
+      <div class="inputwrap" id="wrapAvailable"><span>S/</span><input id="available" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
       <div id="warning" class="warning" role="status"></div>
     </div>
     <button id="reset" type="button">Restablecer valores</button>
@@ -151,7 +152,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-
 <script>
 const $=id=>document.getElementById(id);
 const totalInput=$('total'), availableInput=$('available');
-const DEFAULTS={total:'700',available:'392'};
+const DEFAULTS={total:'',available:''};
 const store={
   get(k){try{return localStorage.getItem(k)}catch(e){return null}},
   set(k,v){try{localStorage.setItem(k,v)}catch(e){}},
@@ -161,6 +162,24 @@ const money=n=>'S/ '+n.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFr
 
 function calculate(){
   const total=Number(totalInput.value), available=Number(availableInput.value);
+  if(totalInput.value.trim()===''||availableInput.value.trim()===''){
+    $('wrapTotal').dataset.bad=$('wrapAvailable').dataset.bad='false';
+    $('warning').textContent='';
+    document.body.dataset.level='none';
+    $('status').textContent='Sin datos';
+    $('shownAvailable').textContent=money(0);
+    $('totalShown').textContent=money(0);
+    $('tileTotal').textContent=money(0);
+    $('used').textContent=money(0);
+    $('availPct').textContent='0%';
+    $('percent').textContent='0%';
+    $('ringLabel').setAttribute('aria-label','0% consumido');
+    $('ringFill').style.strokeDashoffset=100;
+    $('meterFill').style.width='0%';
+    $('usedLabel').textContent='Consumido 0%';
+    $('availableLabel').textContent='Disponible 0%';
+    return;
+  }
   const bad=totalInput.value.trim()===''||availableInput.value.trim()===''||!Number.isFinite(total)||!Number.isFinite(available)||total<=0||available<0||available>total;
   $('wrapTotal').dataset.bad=$('wrapAvailable').dataset.bad=String(bad);
   if(bad){$('warning').textContent='Ingresa una línea mayor que cero y un saldo entre S/ 0 y el total.';return}
